@@ -2,7 +2,7 @@
 
 import sys
 import platform
-from typing import Tuple
+from typing import List, Tuple
 
 
 def check_platform_requirements() -> Tuple[bool, str]:
@@ -84,6 +84,50 @@ def get_screen_size() -> Tuple[int, int]:
             return (width, height)
         except Exception:
             return (1920, 1080)  # 默认分辨率
+
+
+def get_display_bounds() -> List[Tuple[int, int, int, int]]:
+    """Return global-coordinate bounds for every active display.
+
+    The returned coordinates use the same desktop coordinate system expected by
+    the mouse backends.  This lets the region picker work on a secondary
+    monitor instead of only creating a primary-display fullscreen window.
+    """
+    system = platform.system()
+
+    if system == "Darwin":
+        try:
+            import Quartz
+
+            _, displays, display_count = Quartz.CGGetActiveDisplayList(32, None, None)
+            bounds = []
+            for display_id in displays[:display_count]:
+                rect = Quartz.CGDisplayBounds(display_id)
+                bounds.append((round(rect.origin.x), round(rect.origin.y),
+                               round(rect.size.width), round(rect.size.height)))
+            if bounds:
+                return bounds
+        except Exception:
+            pass
+
+    if system == "Windows":
+        try:
+            import ctypes
+
+            user32 = ctypes.windll.user32
+            # Virtual desktop metrics include monitors placed left/above the
+            # primary display, so x/y can legitimately be negative.
+            return [(
+                user32.GetSystemMetrics(76),  # SM_XVIRTUALSCREEN
+                user32.GetSystemMetrics(77),  # SM_YVIRTUALSCREEN
+                user32.GetSystemMetrics(78),  # SM_CXVIRTUALSCREEN
+                user32.GetSystemMetrics(79),  # SM_CYVIRTUALSCREEN
+            )]
+        except Exception:
+            pass
+
+    width, height = get_screen_size()
+    return [(0, 0, width, height)]
 
 
 def get_mouse_position() -> Tuple[int, int]:

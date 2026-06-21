@@ -10,11 +10,13 @@ It is designed for testing signing workflows in local applications, PDF viewers,
 
 - Chinese, English, and mixed-name input.
 - Signature preview before mouse automation begins.
-- User-selected drawing region with coordinate clamping at replay time.
+- Multi-display region picker: select a drawing region on the monitor that
+  contains the signature field, with coordinate clamping at replay time.
 - Adjustable size, speed, jitter, and slant.
 - Per-point timing based on local curvature.
 - Three-second countdown before replay.
-- Global Escape cancellation through `pynput`, plus PyAutoGUI corner fail-safe.
+- Global Escape cancellation on Windows, plus PyAutoGUI corner fail-safe on all
+  supported systems.
 - macOS Quartz, Windows Win32, and PyAutoGUI fallback mouse backends.
 
 ## Requirements
@@ -40,7 +42,9 @@ Alternatively, run `uv run python main.py`.
 3. Select **Preview**.
 4. Select **Choose region** and drag the exact rectangle that may receive mouse events.
 5. Select **Start signing**, then switch to the target application during the countdown.
-6. Press **Esc** to stop at any time. If global input monitoring is unavailable, move the cursor to a primary-monitor corner to invoke the PyAutoGUI fail-safe.
+6. On Windows, press **Esc** to stop at any time. On macOS, cancel during the
+   countdown with **Esc**, or move the cursor to a primary-monitor corner while
+   replaying to invoke the PyAutoGUI fail-safe.
 
 ## Data sources and current scope
 
@@ -56,7 +60,10 @@ Always test in a disposable drawing surface before using a real signature workfl
 Grant the terminal or Python application both of the following permissions in **System Settings → Privacy & Security**:
 
 - **Accessibility**, to emit mouse events.
-- **Input Monitoring**, to receive global Escape while another application is focused.
+
+> macOS global Escape monitoring is intentionally disabled because the current
+> `pynput` listener can cause a native macOS crash. The corner fail-safe remains
+> available during replay.
 
 ## Development
 

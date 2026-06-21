@@ -46,18 +46,21 @@ class BezierCurve:
         Returns:
             曲线上的点坐标 (x, y)
         """
+        # Cubic Hermite form of Catmull-Rom.  The previous implementation
+        # accidentally gave p2 a non-zero coefficient at t=0, so every
+        # segment jumped away from its source point and Chinese strokes became
+        # dense zig-zag scribbles.
         t2 = t * t
         t3 = t2 * t
+        h00 = 2 * t3 - 3 * t2 + 1
+        h10 = t3 - 2 * t2 + t
+        h01 = -2 * t3 + 3 * t2
+        h11 = t3 - t2
 
-        x = (tension * (-t3 + 2 * t2 - t) * p0[0] +
-             (1 + (tension - 3) * t2 + (2 - tension) * t3) * p1[0] +
-             (tension + (3 - 2 * tension) * t2 + (tension - 2) * t3) * p2[0] +
-             tension * (-t2 + t3) * p3[0])
-
-        y = (tension * (-t3 + 2 * t2 - t) * p0[1] +
-             (1 + (tension - 3) * t2 + (2 - tension) * t3) * p1[1] +
-             (tension + (3 - 2 * tension) * t2 + (tension - 2) * t3) * p2[1] +
-             tension * (-t2 + t3) * p3[1])
+        m1 = (tension * (p2[0] - p0[0]), tension * (p2[1] - p0[1]))
+        m2 = (tension * (p3[0] - p1[0]), tension * (p3[1] - p1[1]))
+        x = h00 * p1[0] + h10 * m1[0] + h01 * p2[0] + h11 * m2[0]
+        y = h00 * p1[1] + h10 * m1[1] + h01 * p2[1] + h11 * m2[1]
 
         return (x, y)
 

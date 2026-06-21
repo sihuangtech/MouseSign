@@ -35,7 +35,9 @@ class MainWindow:
         self.text_var = tk.StringVar(value="张三")
         self.size_var = tk.DoubleVar(value=0.9)
         self.speed_var = tk.DoubleVar(value=1.0)
-        self.jitter_var = tk.DoubleVar(value=0.5)
+        # Position jitter is intentionally conservative: independent noise
+        # should never make a legible Chinese stroke look corrupted.
+        self.jitter_var = tk.DoubleVar(value=0.08)
         self.slant_var = tk.DoubleVar(value=0.0)
         
         # 创建界面
@@ -254,7 +256,7 @@ class MainWindow:
         self.cancel_button.config(state=tk.NORMAL)
         self.countdown_active = True
         if not self.emergency_stop.start():
-            self.status_var.set("未能启用全局 ESC；请将鼠标移至屏幕角落中断")
+            self.status_var.set("macOS 使用屏幕角落紧急停止；倒计时内可按 ESC 取消")
         
         # 开始倒计时
         self.countdown(3)

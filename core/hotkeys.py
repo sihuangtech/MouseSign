@@ -1,5 +1,6 @@
 """Global emergency-stop listener used while replaying a signature."""
 
+import platform
 from typing import Callable
 
 
@@ -13,6 +14,13 @@ class EmergencyStopListener:
     def start(self) -> bool:
         if self._listener is not None:
             return True
+        # On current macOS releases, pynput's CGEvent input-source listener can
+        # crash the interpreter in a native HIToolbox dispatch assertion.  This
+        # failure is a SIGTRAP, not a Python exception, so it cannot be safely
+        # recovered from.  Keep macOS replay stable and rely on the already
+        # enabled PyAutoGUI corner fail-safe instead.
+        if platform.system() == "Darwin":
+            return False
         try:
             from pynput import keyboard
 
