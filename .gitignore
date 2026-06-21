@@ -1,0 +1,49 @@
+# Python bytecode and tooling caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Build and packaging output
+build/
+dist/
+wheels/
+*.egg-info/
+*.whl
+pip-wheel-metadata/
+
+# Virtual environments and local uv cache
+.venv/
+venv/
+env/
+ENV/
+.uv-cache/
+
+# Runtime files and local diagnostics
+*.log
+logs/
+*.pid
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Keep source font assets under version control. In particular, do not ignore
+# fonts/svgsZhHans/: cached SVG files keep known Chinese names usable offline.
