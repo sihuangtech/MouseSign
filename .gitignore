@@ -45,5 +45,5 @@ logs/
 Thumbs.db
 Desktop.ini
 
-# Keep source font assets under version control. In particular, do not ignore
-# fonts/svgsZhHans/: cached SVG files keep known Chinese names usable offline.
+# Private font assets and locally downloaded Chinese stroke data
+fonts/
