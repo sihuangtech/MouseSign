@@ -116,85 +116,91 @@ class MouseController:
 
         def run():
             mouse_is_down = False
+            error_message = None
             try:
                 region_x, region_y, region_w, region_h = region
                 if region_w <= 0 or region_h <= 0:
                     raise ValueError("签名区域必须具有正的宽度和高度")
 
-                # Scale around the centre.  Never allow a point outside the
-                # region, even when a caller provides an invalid size value.
+                # 以中心点缩放。即使调用方传入非法 size，也绝不允许点越出区域。
                 safe_scale = min(max(scale_factor, 0.1), 1.0)
                 stroke_duration = 1.3 / max(speed_factor, 0.1)
 
                 def to_screen(point):
                     norm_x = min(max(float(point[0]), 0.0), 1000.0)
                     norm_y = min(max(float(point[1]), 0.0), 1000.0)
+                    # 在画布中心周围应用 size 滑块
                     norm_x = 500 + (norm_x - 500) * safe_scale
                     norm_y = 500 + (norm_y - 500) * safe_scale
-                    x = round(region_x + norm_x * region_w / 1000)
-                    y = round(region_y + norm_y * region_h / 1000)
+                    # 等比缩放：把 1000×1000 画布适配进区域的较短边，
+                    # 让实际签名和预览看起来一致。区域只决定"在哪里画"，
+                    # 不决定"怎么拉伸"。
+                    fit_size = min(region_w, region_h)
+                    offset_x = region_x + (region_w - fit_size) / 2
+                    offset_y = region_y + (region_h - fit_size) / 2
+                    x = round(offset_x + norm_x * fit_size / 1000)
+                    y = round(offset_y + norm_y * fit_size / 1000)
                     return (
                         min(max(x, region_x), region_x + region_w),
                         min(max(y, region_y), region_y + region_h),
                     )
-                
+
                 for traj_idx, traj in enumerate(trajectories):
                     if self.should_stop:
                         break
-                    
+
                     points = traj['points']
                     pen_down = traj['pen_down']
-                    
+
                     if not points:
                         continue
-                    
+
                     # 计算第一个点的绝对坐标
                     first_point = points[0]
                     if len(first_point) >= 2:
                         abs_x, abs_y = to_screen(first_point)
-                        
+
                         # 移动到起始点
                         self.move_to(abs_x, abs_y, duration=0.1)
-                        
+
                         if pen_down:
                             self.mouse_down()
                             mouse_is_down = True
-                        
+
                         # 执行轨迹
                         for point_idx in range(1, len(points)):
                             if self.should_stop:
                                 break
-                            
+
                             point = points[point_idx]
                             abs_x, abs_y = to_screen(point)
-                            
+
                             # 计算移动时间（基于时间戳）
                             if len(point) > 2 and len(points[point_idx - 1]) > 2:
                                 time_diff = point[2] - points[point_idx - 1][2]
                                 move_time = max(time_diff * stroke_duration, 0.003)
                             else:
                                 move_time = 0.02  # 默认50fps
-                            
+
                             # 移动鼠标
                             self.move_to(abs_x, abs_y, duration=move_time)
-                            
+
                             # 更新进度
                             if on_progress:
                                 progress = (traj_idx + point_idx / len(points)) / len(trajectories)
                                 on_progress(progress)
-                        
+
                         if pen_down:
                             self.mouse_up()
                             mouse_is_down = False
-                
-                if on_complete and not self.should_stop:
-                    on_complete()
-                    
+
+                # 最终进度更新，让 UI 在 on_complete 前显示 100%
+                if on_progress and not self.should_stop:
+                    on_progress(1.0)
+
             except Exception as e:
-                message = f"执行轨迹时出错: {e}"
-                print(message)
-                if on_error:
-                    on_error(message)
+                error_message = f"执行轨迹时出错: {e}"
+                print(error_message)
             finally:
                 if mouse_is_down:
                     try:
@@ -202,6 +208,16 @@ class MouseController:
                     except Exception:
                         pass
                 self.is_running = False
+
+            # 在 try/except/finally 之后通知 UI，保证回调一定被触达，
+            # 即使中途抛了异常。cancel_execution() 会自行处理 UI，此时保持沉默。
+            if self.should_stop:
+                return
+            if error_message is not None:
+                if on_error:
+                    on_error(error_message)
+            elif on_complete:
+                on_complete()
 
         self.current_thread = threading.Thread(target=run)
         self.current_thread.daemon = True
